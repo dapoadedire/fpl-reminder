@@ -6,12 +6,18 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "test": "node index.js --dry-run"
+    "test": "node index.js --dry-run",
+    "send-test": "node index.js --test"
   },
-  "keywords": ["fpl", "fantasy-premier-league", "reminder"],
+  "keywords": [
+    "fpl",
+    "fantasy-premier-league",
+    "reminder"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^17.2.3",
     "resend": "^3.0.0"
   }
 }

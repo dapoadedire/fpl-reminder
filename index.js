@@ -1,28 +1,32 @@
-import { Resend } from 'resend';
-import fs from 'fs';
-import path from 'path';
+import "dotenv/config";
+import { Resend } from "resend";
+import fs from "fs";
+import path from "path";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const EMAIL_TO = process.env.EMAIL_TO;
-const EMAIL_FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+const EMAIL_FROM = process.env.EMAIL_FROM;
 
 // Reminder windows in hours
 const REMINDER_WINDOWS = [48, 24, 2];
 
 // File to track sent reminders (prevents duplicates)
-const SENT_REMINDERS_FILE = 'sent-reminders.json';
+const SENT_REMINDERS_FILE = "sent-reminders.json";
 
-const isDryRun = process.argv.includes('--dry-run');
+const isDryRun = process.argv.includes("--dry-run");
+const isTest = process.argv.includes("--test");
 
 async function fetchFPLData() {
   try {
-    const response = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/');
+    const response = await fetch(
+      "https://fantasy.premierleague.com/api/bootstrap-static/"
+    );
     if (!response.ok) {
       throw new Error(`Failed to fetch FPL data: ${response.statusText}`);
     }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching FPL data:', error);
+    console.error("Error fetching FPL data:", error);
     throw error;
   }
 }
@@ -32,7 +36,7 @@ function getNextDeadline(events) {
 
   // Find the next upcoming deadline
   const upcomingEvents = events
-    .filter(event => new Date(event.deadline_time) > now)
+    .filter((event) => new Date(event.deadline_time) > now)
     .sort((a, b) => new Date(a.deadline_time) - new Date(b.deadline_time));
 
   return upcomingEvents[0] || null;
@@ -41,11 +45,11 @@ function getNextDeadline(events) {
 function loadSentReminders() {
   try {
     if (fs.existsSync(SENT_REMINDERS_FILE)) {
-      const data = fs.readFileSync(SENT_REMINDERS_FILE, 'utf8');
+      const data = fs.readFileSync(SENT_REMINDERS_FILE, "utf8");
       return JSON.parse(data);
     }
   } catch (error) {
-    console.error('Error loading sent reminders:', error);
+    console.error("Error loading sent reminders:", error);
   }
   return {};
 }
@@ -58,7 +62,7 @@ function saveSentReminder(gameweek, hoursWindow) {
   try {
     fs.writeFileSync(SENT_REMINDERS_FILE, JSON.stringify(reminders, null, 2));
   } catch (error) {
-    console.error('Error saving reminder:', error);
+    console.error("Error saving reminder:", error);
   }
 }
 
@@ -91,7 +95,9 @@ function checkReminderNeeded(deadline) {
 
 async function sendReminder(deadline, hoursWindow) {
   if (!RESEND_API_KEY || !EMAIL_TO) {
-    throw new Error('Missing required environment variables: RESEND_API_KEY and EMAIL_TO');
+    throw new Error(
+      "Missing required environment variables: RESEND_API_KEY and EMAIL_TO"
+    );
   }
 
   const resend = new Resend(RESEND_API_KEY);
@@ -102,25 +108,25 @@ async function sendReminder(deadline, hoursWindow) {
   const html = `
     <h2>Fantasy Premier League Reminder</h2>
     <p><strong>Gameweek ${deadline.id}</strong></p>
-    <p><strong>Deadline:</strong> ${deadlineTime.toLocaleString('en-GB', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/London'
+    <p><strong>Deadline:</strong> ${deadlineTime.toLocaleString("en-GB", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/London",
     })} (UK Time)</p>
     <p>Don't forget to set up your team!</p>
     <p><a href="https://fantasy.premierleague.com/">Go to FPL →</a></p>
   `;
 
   if (isDryRun) {
-    console.log('\n🧪 DRY RUN - Would send email:');
-    console.log('To:', EMAIL_TO);
-    console.log('From:', EMAIL_FROM);
-    console.log('Subject:', subject);
-    console.log('Body:', html);
+    console.log("\n🧪 DRY RUN - Would send email:");
+    console.log("To:", EMAIL_TO);
+    console.log("From:", EMAIL_FROM);
+    console.log("Subject:", subject);
+    console.log("Body:", html);
     return;
   }
 
@@ -139,38 +145,51 @@ async function sendReminder(deadline, hoursWindow) {
     console.log(`✅ Email sent successfully (ID: ${data.id})`);
     saveSentReminder(deadline.id, hoursWindow);
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error("Error sending email:", error);
     throw error;
   }
 }
 
 async function main() {
-  console.log('🏃 FPL Reminder Check Running...');
-  console.log('Time:', new Date().toISOString());
+  console.log("🏃 FPL Reminder Check Running...");
+  console.log("Time:", new Date().toISOString());
 
   if (isDryRun) {
-    console.log('🧪 Running in DRY RUN mode - no emails will be sent');
+    console.log("🧪 Running in DRY RUN mode - no emails will be sent");
+  }
+
+  if (isTest) {
+    console.log("🧪 Running in TEST mode - will send a test email immediately");
   }
 
   try {
     // Fetch FPL data
-    console.log('📡 Fetching FPL data...');
+    console.log("📡 Fetching FPL data...");
     const data = await fetchFPLData();
 
     // Get next deadline
     const nextDeadline = getNextDeadline(data.events);
 
     if (!nextDeadline) {
-      console.log('ℹ️ No upcoming gameweeks found');
+      console.log("ℹ️ No upcoming gameweeks found");
       return;
     }
 
     const deadlineTime = new Date(nextDeadline.deadline_time);
-    const hoursUntil = ((deadlineTime - new Date()) / (1000 * 60 * 60)).toFixed(1);
+    const hoursUntil = ((deadlineTime - new Date()) / (1000 * 60 * 60)).toFixed(
+      1
+    );
 
     console.log(`\n📅 Next Deadline: Gameweek ${nextDeadline.id}`);
     console.log(`⏰ Time: ${deadlineTime.toISOString()}`);
     console.log(`⏳ Hours until deadline: ${hoursUntil}h`);
+
+    // If test mode, send email immediately
+    if (isTest) {
+      console.log(`\n📧 Sending test email (using 24h window for example)...`);
+      await sendReminder(nextDeadline, 24);
+      return;
+    }
 
     // Check if reminder is needed
     const { shouldSend, window } = checkReminderNeeded(nextDeadline);
@@ -179,11 +198,10 @@ async function main() {
       console.log(`\n📧 Sending ${window}h reminder...`);
       await sendReminder(nextDeadline, window);
     } else {
-      console.log('\n✅ No reminder needed at this time');
+      console.log("\n✅ No reminder needed at this time");
     }
-
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error("❌ Error:", error);
     process.exit(1);
   }
 }
