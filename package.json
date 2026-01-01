@@ -1,0 +1,17 @@
+{
+  "name": "fpl-reminder",
+  "version": "1.0.0",
+  "description": "FPL gameweek deadline reminder system",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js --dry-run"
+  },
+  "keywords": ["fpl", "fantasy-premier-league", "reminder"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "resend": "^3.0.0"
+  }
+}
