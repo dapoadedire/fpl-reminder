@@ -8,7 +8,7 @@ const EMAIL_TO = process.env.EMAIL_TO;
 const EMAIL_FROM = process.env.EMAIL_FROM;
 
 // Reminder windows in hours
-const REMINDER_WINDOWS = [48, 24, 2];
+const REMINDER_WINDOWS = [48, 24, 12, 6, 5, 4, 3, 2, 1];
 
 // File to track sent reminders (prevents duplicates)
 const SENT_REMINDERS_FILE = "sent-reminders.json";
